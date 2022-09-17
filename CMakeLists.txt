@@ -1,31 +1,26 @@
 cmake_minimum_required(VERSION 3.15)
-project(minimalcpppj
+project(gfxminimath
   VERSION 1.0
-  DESCRIPTION "render graph parser"
+  DESCRIPTION "mini math library for real time 3d graphics"
   LANGUAGES CXX
 )
 
 include(cmake/CPM.cmake)
 CPMAddPackage("gh:onqtam/doctest#2.4.6")
-CPMAddPackage("gh:gabime/spdlog@1.9.2")
 
-option(LIB_MODE "build static library." OFF)
-option(BUILD_WITH_TEST "build project with test (not used when LIB_MODE=ON)." OFF)
-if (NOT LIB_MODE AND CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+option(BUILD_WITH_TEST "build project with tests" OFF)
+if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   add_executable(${CMAKE_PROJECT_NAME})
   if (BUILD_WITH_TEST)
-	target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE BUILD_WITH_TEST DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
-	target_include_directories(${CMAKE_PROJECT_NAME} SYSTEM PUBLIC "${doctest_SOURCE_DIR}")
-	add_subdirectory(tests)
+	  target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE BUILD_WITH_TEST DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
+	  target_include_directories(${CMAKE_PROJECT_NAME} SYSTEM PUBLIC "${doctest_SOURCE_DIR}")
+	  add_subdirectory(tests)
   else()
-	add_subdirectory(app)
+	  add_subdirectory(app)
   endif()
 else()
   add_library(${CMAKE_PROJECT_NAME})
 endif()
-target_include_directories(${CMAKE_PROJECT_NAME} SYSTEM INTERFACE spdlog)
-set_target_properties(spdlog PROPERTIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES $<TARGET_PROPERTY:spdlog,INTERFACE_INCLUDE_DIRECTORIES>)
-target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE spdlog::spdlog)
 
 target_compile_features(${CMAKE_PROJECT_NAME} PUBLIC cxx_std_20)
 target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
@@ -38,9 +33,5 @@ target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
 target_include_directories(${CMAKE_PROJECT_NAME}
   PUBLIC
   "include"
-)
-target_precompile_headers(${CMAKE_PROJECT_NAME}
-  PRIVATE
-  "${spdlog_SOURCE_DIR}/include/spdlog/spdlog.h"
 )
 add_subdirectory(src)

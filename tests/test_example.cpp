@@ -1,7 +1,8 @@
 #include <doctest/doctest.h>
-#include <spdlog/spdlog.h>
-#include "minimalcpppj/minimalcpppj.h"
+#include "gfxminimath/gfxminimath.h"
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreserved-identifier"
 TEST_CASE("log") {
-  spdlog::info("hello {}", "world");
   CHECK_UNARY(true);
 }
+#pragma clang diagnostic pop

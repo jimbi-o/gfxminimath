@@ -24,6 +24,7 @@ if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   CPMAddPackage("gh:onqtam/doctest#2.4.6")
   target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE BUILD_WITH_TEST DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
   target_include_directories(${CMAKE_PROJECT_NAME} SYSTEM PUBLIC "${doctest_SOURCE_DIR}")
+  add_subdirectory(src)
   add_subdirectory(tests)
 else()
   add_library(${CMAKE_PROJECT_NAME})
@@ -40,12 +41,23 @@ target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
   $<$<CXX_COMPILER_ID:Clang>:-Weverything -Wno-c++98-c++11-c++14-compat -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-c++20-compat>
   $<$<CXX_COMPILER_ID:MSVC>:/W4 /MP>
 )
+
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
-  $<$<CXX_COMPILER_ID:MSVC>:NOMINMAX>)
+  $<$<CXX_COMPILER_ID:MSVC>:NOMINMAX>
+  VCL_NAMESPACE=vcl
+)
 target_include_directories(${CMAKE_PROJECT_NAME}
   PUBLIC
   "include"
 )
-add_subdirectory(src)
+target_precompile_headers(${CMAKE_PROJECT_NAME}
+  PUBLIC
+  "${vcl_SOURCE_DIR}/vectorclass.h"
+  "${vcl_SOURCE_DIR}/vectormath_exp.h"
+  "${vcl_SOURCE_DIR}/vectormath_hyp.h"
+  "${vcl_SOURCE_DIR}/vectormath_trig.h"
+  "${vcladdon_SOURCE_DIR}/quaternion/quaternion.h"
+  "${vcladdon_SOURCE_DIR}/vector3d/vector3d.h"
+)
 
 #cmake -S . -B build/clang13 -G Ninja -DCMAKE_C_COMPILER=clang-13 -DCMAKE_CXX_COMPILER=clang++-13 -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCPM_SOURCE_CACHE=~/dev/.cache/CPM -DCMAKE_CXX_FLAGS="-m64 -mavx2"

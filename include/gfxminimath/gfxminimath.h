@@ -1,6 +1,5 @@
 #ifndef GFX_MINI_MATH_H
 #define GFX_MINI_MATH_H
-#define VCL_NAMESPACE vcl
 #include "vectorclass.h"
 #include "vectormath_exp.h"
 #include "vectormath_hyp.h"
@@ -11,5 +10,13 @@ namespace gfxminimath {
 using vec4 = vcl::Vec4f;
 using vec3 = vcl::Vec3Df;
 using quat = vcl::Quaternion1f;
+using quat = vcl::Quaternion1f;
+using matrix = vcl::Vec16f;
+inline auto mul(const vec4& v, const matrix& m) {
+  return v;
+}
+inline void GetValue(const vec4& src, float dst[4]) {
+  src.store(dst);
+}
 }
 #endif

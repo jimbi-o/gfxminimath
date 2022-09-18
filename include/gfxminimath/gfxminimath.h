@@ -12,6 +12,7 @@ using vec3 = vcl::Vec3Df;
 using quat = vcl::Quaternion1f;
 class matrix {
  public:
+  matrix() {}
   matrix(const float m00, const float m01, const float m02, const float m03,
          const float m10, const float m11, const float m12, const float m13,
          const float m20, const float m21, const float m22, const float m23,
@@ -34,13 +35,25 @@ inline auto mul(const matrix& m, const vec4& v) {
   float w = horizontal_add(d);
   return vec4(x, y, z, w);
 }
-inline void to_array(const vec4& src, float dst[4]) {
-  src.store(dst);
+inline auto lookat(const vec3& from, const vec3& to, const vec3& up = vec3(0.0f, 1.0f, 0.0f)) {
+  return matrix();
 }
 // https://shikihuiku.github.io/post/projection_matrix/
 inline auto perspective_division(const vec4& v) {
   vec4 w = permute4<3,3,3,3>(v);
   return v * approx_recipr(w);
+}
+inline void to_array(const vec4& src, float dst[4]) {
+  src.store(dst);
+}
+inline void to_array(const vec3& src, float dst[3]) {
+  src.store(dst);
+}
+inline void to_array_row_major(const matrix& src, float dst[16]) {
+}
+inline void to_array_column_major(const matrix& src, float dst[16]) {
+  // https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-appendix-pre-pragma-pack-matrix
+  // hlsl default
 }
 }
 #endif

@@ -37,5 +37,10 @@ inline auto mul(const matrix& m, const vec4& v) {
 inline void to_array(const vec4& src, float dst[4]) {
   src.store(dst);
 }
+// https://shikihuiku.github.io/post/projection_matrix/
+inline auto perspective_division(const vec4& v) {
+  vec4 w = permute4<3,3,3,3>(v);
+  return v * approx_recipr(w);
+}
 }
 #endif

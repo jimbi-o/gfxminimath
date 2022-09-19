@@ -45,6 +45,7 @@ target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE
 target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:NOMINMAX>
   VCL_NAMESPACE=vcl
+  _USE_MATH_DEFINES
 )
 target_include_directories(${CMAKE_PROJECT_NAME}
   PUBLIC
@@ -52,6 +53,7 @@ target_include_directories(${CMAKE_PROJECT_NAME}
 )
 target_precompile_headers(${CMAKE_PROJECT_NAME}
   PUBLIC
+  <cmath>
   "${vcl_SOURCE_DIR}/vectorclass.h"
   "${vcl_SOURCE_DIR}/vectormath_exp.h"
   "${vcl_SOURCE_DIR}/vectormath_hyp.h"

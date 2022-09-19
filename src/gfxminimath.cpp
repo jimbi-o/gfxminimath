@@ -38,7 +38,7 @@ matrix transpose(const matrix& m) {
                 vec4(array[2], array[6], array[10], array[14]),
                 vec4(array[3], array[7], array[11], array[15]));
 }
-matrix lookat(const vec3& from, const vec3& to, const vec3& up_world) {
+matrix lookat_lh(const vec3& from, const vec3& to, const vec3& up_world) {
   // https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dxmatrixlookatlh
   auto view  = normalize_vector(to - from);
   auto right = normalize_vector(cross_product(up_world, view));
@@ -54,6 +54,12 @@ matrix lookat(const vec3& from, const vec3& to, const vec3& up_world) {
                 vec4(array[1], array[5], array[9], 0.0f),
                 vec4(array[2], array[6], array[10], 0.0f),
                 vec4(array[3], array[7], array[11], 1.0f));
+}
+matrix perspective_projection_lh(const float fov_vertical_radian, const float aspect_ratio, const float z_near, const float z_far) {
+  // https://shikihuiku.github.io/post/projection_matrix/
+  // https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dxmatrixperspectivefovlh
+  // TODO
+  return matrix();
 }
 vec3 perspective_division(const vec4& v) {
   // https://shikihuiku.github.io/post/projection_matrix/
@@ -113,7 +119,7 @@ TEST_CASE("lookat") {
   using namespace gfxminimath;
   vec3 from(1.0f, 2.0f, 3.0f);
   vec3 to(-1.0f, -3.0f, 5.0f);
-  auto view_mat = lookat(from, to);
+  auto view_mat = lookat_lh(from, to);
   float result_array[16];
   to_array_row_major(view_mat, result_array);
   auto view = normalize_vector(to - from);
@@ -145,5 +151,35 @@ TEST_CASE("lookat") {
   CHECK_EQ(result_array[13], doctest::Approx(0).epsilon(0.001));
   CHECK_EQ(result_array[14], doctest::Approx(0).epsilon(0.001));
   CHECK_EQ(result_array[15], doctest::Approx(1).epsilon(0.001));
+}
+TEST_CASE("perspective projection") {
+  using namespace gfxminimath;
+  const float fov_vertical_radian = 45.0f * kDegreeToRadian;
+  const float aspect_ratio = 1920.0f / 1080.0f;
+  const float z_near = 0.1f;
+  const float z_far = 1000.0f;
+  auto projection_mat = perspective_projection_lh(fov_vertical_radian, aspect_ratio, z_near, z_far);
+  float result_array[16];
+  to_array_row_major(projection_mat, result_array);
+  const float m11 = 1.0f / tan(fov_vertical_radian * 0.5f);
+  const float m00 = m11 / aspect_ratio;
+  const float m22 = z_far / (z_far - z_near);
+  const float m23 = -z_near * m22;
+  CHECK_EQ(result_array[0], doctest::Approx(m00).epsilon(0.001));
+  CHECK_EQ(result_array[1], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[2], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[3], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[4], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[5], doctest::Approx(m11).epsilon(0.001));
+  CHECK_EQ(result_array[6], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[7], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[8], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[9], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[10], doctest::Approx(m22).epsilon(0.001));
+  CHECK_EQ(result_array[11], doctest::Approx(m23).epsilon(0.001));
+  CHECK_EQ(result_array[12], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[13], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[14], doctest::Approx(1).epsilon(0.001));
+  CHECK_EQ(result_array[15], doctest::Approx(0).epsilon(0.001));
 }
 #pragma clang diagnostic pop

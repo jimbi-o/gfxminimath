@@ -1,5 +1,6 @@
 #ifndef GFX_MINI_MATH_H
 #define GFX_MINI_MATH_H
+#include <cmath>
 #include "vectorclass.h"
 #include "vectormath_exp.h"
 #include "vectormath_hyp.h"
@@ -7,10 +8,14 @@
 #include "quaternion/quaternion.h"
 #include "vector3d/vector3d.h"
 namespace gfxminimath {
+static const float kPi = static_cast<float>(M_PI);
+static const float kHalfPi = kPi / 2.0f;
+static const float kInvPi = 1.0f / kPi;
+static const float kDegreeToRadian = kPi / 180.0f;
+static const float kRadianToDegree = 1.0f / kDegreeToRadian;
 using vec4 = vcl::Vec4f;
 using vec3 = vcl::Vec3Df;
 using quat = vcl::Quaternion1f;
-// left handed
 class matrix {
  public:
   matrix();
@@ -24,7 +29,8 @@ class matrix {
 vec4 __vectorcall append_w(const vec3& m, const float w);
 vec4 __vectorcall mul(const matrix& m, const vec4& v);
 matrix __vectorcall transpose(const matrix& m);
-matrix __vectorcall lookat(const vec3& from, const vec3& to, const vec3& up_world = vec3(0.0f, 1.0f, 0.0f));
+matrix __vectorcall lookat_lh(const vec3& from, const vec3& to, const vec3& up_world = vec3(0.0f, 1.0f, 0.0f));
+matrix __vectorcall perspective_projection_lh(const float fov_vertical_radian, const float aspect_ratio, const float z_near, const float z_far);
 vec3 __vectorcall perspective_division(const vec4& v);
 void __vectorcall to_array(const vec4& src, float dst[4]);
 void __vectorcall to_array(const vec3& src, float dst[3]);

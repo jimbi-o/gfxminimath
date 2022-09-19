@@ -14,7 +14,7 @@ configuration:
 - Release
 
 before_build:
-- cmake -S . -B build -DBUILD_WITH_TEST=ON
+- cmake -S . -B build -A x64 -DCMAKE_CXX_FLAGS="/arch:AVX2"
 
 build_script:
 - cmake --build build --config %configuration%

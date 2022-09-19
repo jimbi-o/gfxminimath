@@ -58,8 +58,14 @@ matrix lookat_lh(const vec3& from, const vec3& to, const vec3& up_world) {
 matrix perspective_projection_lh(const float fov_vertical_radian, const float aspect_ratio, const float z_near, const float z_far) {
   // https://shikihuiku.github.io/post/projection_matrix/
   // https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dxmatrixperspectivefovlh
-  // TODO
-  return matrix();
+  const float m11 = 1.0f / std::tan(fov_vertical_radian * 0.5f);
+  const float m00 = m11 / aspect_ratio;
+  const float m22 = z_far / (z_far - z_near);
+  const float m23 = -z_near * m22;
+  return matrix(m00, 0.0f, 0.0f, 0.0f,
+                0.0f, m11, 0.0f, 0.0f,
+                0.0f, 0.0f, m22, m23,
+                0.0f, 0.0f, 1.0f, 0.0f);
 }
 vec3 perspective_division(const vec4& v) {
   // https://shikihuiku.github.io/post/projection_matrix/
@@ -161,7 +167,7 @@ TEST_CASE("perspective projection") {
   auto projection_mat = perspective_projection_lh(fov_vertical_radian, aspect_ratio, z_near, z_far);
   float result_array[16];
   to_array_row_major(projection_mat, result_array);
-  const float m11 = 1.0f / tan(fov_vertical_radian * 0.5f);
+  const float m11 = 1.0f / std::tan(fov_vertical_radian * 0.5f);
   const float m00 = m11 / aspect_ratio;
   const float m22 = z_far / (z_far - z_near);
   const float m23 = -z_near * m22;

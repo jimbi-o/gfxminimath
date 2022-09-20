@@ -31,10 +31,10 @@ endif()
 add_subdirectory(src)
 
 target_include_directories(${PROJECT_NAME}
-  SYSTEM
   PUBLIC
   "${vcl_SOURCE_DIR}"
   "${vcladdon_SOURCE_DIR}"
+  "include"
   PRIVATE
   "${doctest_SOURCE_DIR}"
 )
@@ -50,10 +50,6 @@ target_compile_definitions(${PROJECT_NAME} PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:NOMINMAX>
   VCL_NAMESPACE=vcl
   _USE_MATH_DEFINES
-)
-target_include_directories(${PROJECT_NAME}
-  PUBLIC
-  "include"
 )
 target_precompile_headers(${PROJECT_NAME}
   PUBLIC

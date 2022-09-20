@@ -46,7 +46,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:/W4 /MP>
 )
 
-target_compile_definitions(${PROJECT_NAME} PRIVATE
+target_compile_definitions(${PROJECT_NAME} PUBLIC
   $<$<CXX_COMPILER_ID:MSVC>:NOMINMAX>
   VCL_NAMESPACE=vcl
   _USE_MATH_DEFINES

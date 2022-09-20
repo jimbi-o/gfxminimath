@@ -11,12 +11,12 @@ matrix::matrix(const float m00, const float m01, const float m02, const float m0
     , m2(m02, m12, m22, m32)
     , m3(m03, m13, m23, m33) {
 }
-vec4 append_w(const vec3& v, const float w) {
+vec4 __vectorcall append_w(const vec3& v, const float w) {
   vec4 v4(v);
   v4.insert(3, w);
   return v4;
 }
-vec4 mul(const matrix& m, const vec4& v) {
+vec4 __vectorcall mul(const matrix& m, const vec4& v) {
   vec4 a = m.m0 * v;
   vec4 b = m.m1 * v;
   vec4 c = m.m2 * v;
@@ -27,7 +27,7 @@ vec4 mul(const matrix& m, const vec4& v) {
   float w = horizontal_add(d);
   return vec4(x, y, z, w);
 }
-matrix transpose(const matrix& m) {
+matrix __vectorcall transpose(const matrix& m) {
   float array[16];
   to_array(m.m0, &array[0]);
   to_array(m.m1, &array[4]);
@@ -38,7 +38,7 @@ matrix transpose(const matrix& m) {
                 vec4(array[2], array[6], array[10], array[14]),
                 vec4(array[3], array[7], array[11], array[15]));
 }
-matrix lookat_lh(const vec3& from, const vec3& to, const vec3& up_world) {
+matrix __vectorcall lookat_lh(const vec3& from, const vec3& to, const vec3& up_world) {
   // https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dxmatrixlookatlh
   auto view  = normalize_vector(to - from);
   auto right = normalize_vector(cross_product(up_world, view));
@@ -55,7 +55,7 @@ matrix lookat_lh(const vec3& from, const vec3& to, const vec3& up_world) {
                 vec4(array[2], array[6], array[10], 0.0f),
                 vec4(array[3], array[7], array[11], 1.0f));
 }
-matrix perspective_projection_lh(const float fov_vertical_radian, const float aspect_ratio, const float z_near, const float z_far) {
+matrix __vectorcall perspective_projection_lh(const float fov_vertical_radian, const float aspect_ratio, const float z_near, const float z_far) {
   // https://shikihuiku.github.io/post/projection_matrix/
   // https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dxmatrixperspectivefovlh
   const float m11 = 1.0f / std::tan(fov_vertical_radian * 0.5f);
@@ -67,22 +67,22 @@ matrix perspective_projection_lh(const float fov_vertical_radian, const float as
                 0.0f, 0.0f, m22, m23,
                 0.0f, 0.0f, 1.0f, 0.0f);
 }
-vec3 perspective_division(const vec4& v) {
+vec3 __vectorcall perspective_division(const vec4& v) {
   // https://shikihuiku.github.io/post/projection_matrix/
   vec4 w = permute4<3,3,3,3>(v);
   return vec3(v * approx_recipr(w));
 }
-void to_array(const vec4& src, float dst[4]) {
+void __vectorcall to_array(const vec4& src, float dst[4]) {
   src.store(dst);
 }
-void to_array(const vec3& src, float dst[3]) {
+void __vectorcall to_array(const vec3& src, float dst[3]) {
   src.store(dst);
 }
-void to_array_row_major(const matrix& src, float dst[16]) {
+void __vectorcall to_array_row_major(const matrix& src, float dst[16]) {
   const auto m = transpose(src);
   to_array_column_major(m, dst);
 }
-void to_array_column_major(const matrix& src, float dst[16]) {
+void __vectorcall to_array_column_major(const matrix& src, float dst[16]) {
   // hlsl default
   // https://learn.microsoft.com/en-us/windows/win32/direct3dhlsl/dx-graphics-hlsl-appendix-pre-pragma-pack-matrix
   src.m0.store(&dst[0]);
@@ -92,9 +92,11 @@ void to_array_column_major(const matrix& src, float dst[16]) {
 }
 } // namespace gfxminimath
 #include <doctest/doctest.h>
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wreserved-identifier"
 #pragma clang diagnostic ignored "-Wdouble-promotion"
+#endif
 TEST_CASE("matrix * vector") {
   using namespace gfxminimath;
   matrix m(1.0f, 2.0f, 3.0f, 4.0f,
@@ -188,4 +190,6 @@ TEST_CASE("perspective projection") {
   CHECK_EQ(result_array[14], doctest::Approx(1).epsilon(0.001));
   CHECK_EQ(result_array[15], doctest::Approx(0).epsilon(0.001));
 }
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif

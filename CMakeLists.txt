@@ -63,4 +63,7 @@ target_precompile_headers(${PROJECT_NAME}
   "${vcladdon_SOURCE_DIR}/vector3d/vector3d.h"
 )
 
+set_directory_properties(PROPERTIES VS_STARTUP_PROJECT gfxminimath)
+
 #cmake -S . -B build/clang13 -G Ninja -DCMAKE_C_COMPILER=clang-13 -DCMAKE_CXX_COMPILER=clang++-13 -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCPM_SOURCE_CACHE=~/dev/.cache/CPM -DCMAKE_CXX_FLAGS="-m64 -mavx2"
+#cmake.exe -S . -B build/vs -A x64 -DCMAKE_CXX_FLAGS="/arch:AVX2" -DCPM_SOURCE_CACHE=../.cache/CPM

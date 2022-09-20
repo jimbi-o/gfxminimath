@@ -6,6 +6,7 @@ project(gfxminimath
 )
 
 include(cmake/CPM.cmake)
+CPMAddPackage("gh:onqtam/doctest#2.4.6")
 CPMAddPackage(
   NAME vcl
   GITHUB_REPOSITORY "vectorclass/version2"
@@ -21,8 +22,7 @@ CPMAddPackage(
 
 if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   add_executable(${PROJECT_NAME})
-  CPMAddPackage("gh:onqtam/doctest#2.4.6")
-  target_compile_definitions(${PROJECT_NAME} PRIVATE BUILD_WITH_TEST DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
+  target_compile_definitions(${PROJECT_NAME} PRIVATE DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
   target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC "${doctest_SOURCE_DIR}")
   add_subdirectory(tests)
 else()

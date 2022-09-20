@@ -23,7 +23,6 @@ CPMAddPackage(
 if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
   add_executable(${PROJECT_NAME})
   target_compile_definitions(${PROJECT_NAME} PRIVATE DOCTEST_CONFIG_SUPER_FAST_ASSERTS)
-  target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC "${doctest_SOURCE_DIR}")
   add_subdirectory(tests)
 else()
   add_library(${PROJECT_NAME})
@@ -31,9 +30,13 @@ endif()
 
 add_subdirectory(src)
 
-target_include_directories(${PROJECT_NAME} SYSTEM PUBLIC
+target_include_directories(${PROJECT_NAME}
+  SYSTEM
+  PUBLIC
   "${vcl_SOURCE_DIR}"
   "${vcladdon_SOURCE_DIR}"
+  PRIVATE
+  "${doctest_SOURCE_DIR}"
 )
 
 target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)

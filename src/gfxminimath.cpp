@@ -90,13 +90,87 @@ void __vectorcall to_array_column_major(const matrix& src, float dst[16]) {
   src.m2.store(&dst[8]);
   src.m3.store(&dst[12]);
 }
+quat normalize(const quat& q) {
+  const auto unit_q = q / abs(q);
+  return unit_q;
+}
+matrix matrix::scale(const float scale[3]) {
+  return matrix(scale[0], 0.0f, 0.0f, 0.0f,
+                0.0f, scale[1], 0.0f, 0.0f,
+                0.0f, 0.0f, scale[2], 0.0f,
+                0.0f, 0.0f, 0.0f, 1.0f);
+}
+matrix matrix::rotation(const float quat[4]) {
+  vec4 xyz(quat[0], quat[1], quat[2], 0.0f);
+  vec4 xyz_squared = xyz * xyz;
+  vec4 addition_xxyy_yyzz_zzxx = xyz_squared + permute4<1,2,0,-1>(xyz_squared);
+  vec4 diag = 1.0f - 2.0f * permute4<1,2,0,-1>(addition_xxyy_yyzz_zzxx);
+  vec4 xy_yz_zx_mul2 = xyz * permute4<1,2,0,-1>(xyz) * 2.0f;
+  vec4 wz_wx_wy_mul2 = permute4<2,0,1,-1>(xyz * quat[3] * 2.0f);
+  vec4 added      = xy_yz_zx_mul2 + wz_wx_wy_mul2;
+  vec4 subtracted = xy_yz_zx_mul2 - wz_wx_wy_mul2;
+  float diag_array[4];
+  float added_array[4];
+  float subtracted_array[4];
+  to_array(diag, diag_array);
+  to_array(added, added_array);
+  to_array(subtracted, subtracted_array);
+  return matrix(diag_array[0], added_array[0], subtracted_array[2], 0.0f,
+                subtracted_array[0], diag_array[1], added_array[1], 0.0f,
+                added_array[2], subtracted_array[1], diag_array[2], 0.0f,
+                0.0f, 0.0f, 0.0f, 1.0f);
+}
+matrix matrix::translation(const float translation[3]) {
+  return matrix(1.0f, 0.0f, 0.0f, translation[0],
+                0.0f, 1.0f, 0.0f, translation[1],
+                0.0f, 0.0f, 1.0f, translation[2],
+                0.0f, 0.0f, 0.0f, 1.0f);
+}
+matrix matrix::identity() {
+  return matrix(1.0f, 0.0f, 0.0f, 0.0f,
+                0.0f, 1.0f, 0.0f, 0.0f,
+                0.0f, 0.0f, 1.0f, 0.0f,
+                0.0f, 0.0f, 0.0f, 1.0f);
+}
+matrix matrix::transpose(const matrix& m) {
+  float f[16];
+  to_array_column_major(m, f);
+  return matrix(f[0], f[1], f[2], f[3],
+                f[4], f[5], f[6], f[7],
+                f[8], f[9], f[10], f[11],
+                f[12], f[13], f[14], f[15]);
+}
+matrix matrix::operator *(const matrix& m) {
+  auto n = transpose(*this);
+  return matrix(horizontal_add(n.m0*m.m0), horizontal_add(n.m0*m.m1), horizontal_add(n.m0*m.m2), horizontal_add(n.m0*m.m3),
+                horizontal_add(n.m1*m.m0), horizontal_add(n.m1*m.m1), horizontal_add(n.m1*m.m2), horizontal_add(n.m1*m.m3),
+                horizontal_add(n.m2*m.m0), horizontal_add(n.m2*m.m1), horizontal_add(n.m2*m.m2), horizontal_add(n.m2*m.m3),
+                horizontal_add(n.m3*m.m0), horizontal_add(n.m3*m.m1), horizontal_add(n.m3*m.m2), horizontal_add(n.m3*m.m3));
+}
+matrix matrix::operator *=(const matrix& m) {
+  *this = *this * m;
+  return *this;
+}
+bool matrix::operator == (const matrix& m) const {
+  return horizontal_and(m0 == m.m0) && horizontal_and(m1 == m.m1) && horizontal_and(m2 == m.m2) && horizontal_and(m3 == m.m3);
+}
+void set_matrix_with_row_major_array(const float src[16], matrix* dst) {
+  *dst = matrix(src[0], src[1], src[2], src[3],
+                src[4], src[5], src[6], src[7],
+                src[8], src[9], src[10], src[11],
+                src[12], src[13], src[14], src[15]);
+}
+void set_matrix_with_column_major_array(const float src[16], matrix* dst) {
+  set_matrix_with_row_major_array(src, dst);
+  *dst = transpose(*dst);
+}
 } // namespace gfxminimath
-#include <doctest/doctest.h>
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wreserved-identifier"
 #pragma clang diagnostic ignored "-Wdouble-promotion"
 #endif
+#include <doctest/doctest.h>
 TEST_CASE("matrix * vector") {
   using namespace gfxminimath;
   matrix m(1.0f, 2.0f, 3.0f, 4.0f,
@@ -189,6 +263,186 @@ TEST_CASE("perspective projection") {
   CHECK_EQ(result_array[13], doctest::Approx(0).epsilon(0.001));
   CHECK_EQ(result_array[14], doctest::Approx(1).epsilon(0.001));
   CHECK_EQ(result_array[15], doctest::Approx(0).epsilon(0.001));
+}
+TEST_CASE("matrix transforms") {
+  using namespace gfxminimath;
+  float translation_array[] = {1.0f, 2.0f, 3.0f};
+  auto m = matrix::translation(translation_array);
+  float result_array[16];
+  to_array_row_major(m, result_array);
+  CHECK_EQ(result_array[0], doctest::Approx(1).epsilon(0.001));
+  CHECK_EQ(result_array[1], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[2], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[3], doctest::Approx(translation_array[0]).epsilon(0.001));
+  CHECK_EQ(result_array[4], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[5], doctest::Approx(1).epsilon(0.001));
+  CHECK_EQ(result_array[6], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[7], doctest::Approx(translation_array[1]).epsilon(0.001));
+  CHECK_EQ(result_array[8], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[9], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[10], doctest::Approx(1).epsilon(0.001));
+  CHECK_EQ(result_array[11], doctest::Approx(translation_array[2]).epsilon(0.001));
+  CHECK_EQ(result_array[12], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[13], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[14], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[15], doctest::Approx(1).epsilon(0.001));
+  float rotation_array[] = {1.0f, 2.0f, 3.0f, 4.0f};
+  const auto unit_q = normalize(quat(rotation_array[0], rotation_array[1], rotation_array[2], rotation_array[3]));
+  to_array(unit_q.to_vector(), rotation_array);
+  m = matrix::rotation(rotation_array);
+  to_array_row_major(m, result_array);
+  {
+    const float x = rotation_array[0];
+    const float y = rotation_array[1];
+    const float z = rotation_array[2];
+    const float w = rotation_array[3];
+    CHECK_EQ(result_array[0], doctest::Approx(1-2*y*y-2*z*z).epsilon(0.001));
+    CHECK_EQ(result_array[1], doctest::Approx(2*x*y+2*w*z).epsilon(0.001));
+    CHECK_EQ(result_array[2], doctest::Approx(2*x*z-2*w*y).epsilon(0.001));
+    CHECK_EQ(result_array[3], doctest::Approx(0).epsilon(0.001));
+    CHECK_EQ(result_array[4], doctest::Approx(2*x*y-2*w*z).epsilon(0.001));
+    CHECK_EQ(result_array[5], doctest::Approx(1-2*x*x-2*z*z).epsilon(0.001));
+    CHECK_EQ(result_array[6], doctest::Approx(2*y*z+2*w*x).epsilon(0.001));
+    CHECK_EQ(result_array[7], doctest::Approx(0).epsilon(0.001));
+    CHECK_EQ(result_array[8], doctest::Approx(2*x*z+2*w*y).epsilon(0.001));
+    CHECK_EQ(result_array[9], doctest::Approx(2*y*z-2*w*x).epsilon(0.001));
+    CHECK_EQ(result_array[10], doctest::Approx(1-2*x*x-2*y*y).epsilon(0.001));
+    CHECK_EQ(result_array[11], doctest::Approx(0).epsilon(0.001));
+    CHECK_EQ(result_array[12], doctest::Approx(0).epsilon(0.001));
+    CHECK_EQ(result_array[13], doctest::Approx(0).epsilon(0.001));
+    CHECK_EQ(result_array[14], doctest::Approx(0).epsilon(0.001));
+    CHECK_EQ(result_array[15], doctest::Approx(1).epsilon(0.001));
+  }
+  float scale_array[] = {0.1f, 2.0f, 3.0f};
+  m = matrix::scale(scale_array);
+  to_array_row_major(m, result_array);
+  CHECK_EQ(result_array[0], doctest::Approx(0.1).epsilon(0.001));
+  CHECK_EQ(result_array[1], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[2], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[3], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[4], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[5], doctest::Approx(2).epsilon(0.001));
+  CHECK_EQ(result_array[6], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[7], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[8], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[9], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[10], doctest::Approx(3).epsilon(0.001));
+  CHECK_EQ(result_array[11], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[12], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[13], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[14], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[15], doctest::Approx(1).epsilon(0.001));
+  m = matrix::identity();
+  to_array_row_major(m, result_array);
+  CHECK_EQ(result_array[0], doctest::Approx(1).epsilon(0.001));
+  CHECK_EQ(result_array[1], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[2], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[3], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[4], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[5], doctest::Approx(1).epsilon(0.001));
+  CHECK_EQ(result_array[6], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[7], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[8], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[9], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[10], doctest::Approx(1).epsilon(0.001));
+  CHECK_EQ(result_array[11], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[12], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[13], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[14], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[15], doctest::Approx(1).epsilon(0.001));
+  for (uint32_t i = 0; i < 16; i++) {
+    result_array[i] = static_cast<float>(i);
+  }
+  set_matrix_with_row_major_array(result_array, &m);
+  to_array_row_major(m, result_array);
+  CHECK_EQ(result_array[0], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[1], doctest::Approx(1).epsilon(0.001));
+  CHECK_EQ(result_array[2], doctest::Approx(2).epsilon(0.001));
+  CHECK_EQ(result_array[3], doctest::Approx(3).epsilon(0.001));
+  CHECK_EQ(result_array[4], doctest::Approx(4).epsilon(0.001));
+  CHECK_EQ(result_array[5], doctest::Approx(5).epsilon(0.001));
+  CHECK_EQ(result_array[6], doctest::Approx(6).epsilon(0.001));
+  CHECK_EQ(result_array[7], doctest::Approx(7).epsilon(0.001));
+  CHECK_EQ(result_array[8], doctest::Approx(8).epsilon(0.001));
+  CHECK_EQ(result_array[9], doctest::Approx(9).epsilon(0.001));
+  CHECK_EQ(result_array[10], doctest::Approx(10).epsilon(0.001));
+  CHECK_EQ(result_array[11], doctest::Approx(11).epsilon(0.001));
+  CHECK_EQ(result_array[12], doctest::Approx(12).epsilon(0.001));
+  CHECK_EQ(result_array[13], doctest::Approx(13).epsilon(0.001));
+  CHECK_EQ(result_array[14], doctest::Approx(14).epsilon(0.001));
+  CHECK_EQ(result_array[15], doctest::Approx(15).epsilon(0.001));
+  set_matrix_with_column_major_array(result_array, &m);
+  to_array_row_major(m, result_array);
+  CHECK_EQ(result_array[0], doctest::Approx(0).epsilon(0.001));
+  CHECK_EQ(result_array[1], doctest::Approx(4).epsilon(0.001));
+  CHECK_EQ(result_array[2], doctest::Approx(8).epsilon(0.001));
+  CHECK_EQ(result_array[3], doctest::Approx(12).epsilon(0.001));
+  CHECK_EQ(result_array[4], doctest::Approx(1).epsilon(0.001));
+  CHECK_EQ(result_array[5], doctest::Approx(5).epsilon(0.001));
+  CHECK_EQ(result_array[6], doctest::Approx(9).epsilon(0.001));
+  CHECK_EQ(result_array[7], doctest::Approx(13).epsilon(0.001));
+  CHECK_EQ(result_array[8], doctest::Approx(2).epsilon(0.001));
+  CHECK_EQ(result_array[9], doctest::Approx(6).epsilon(0.001));
+  CHECK_EQ(result_array[10], doctest::Approx(10).epsilon(0.001));
+  CHECK_EQ(result_array[11], doctest::Approx(14).epsilon(0.001));
+  CHECK_EQ(result_array[12], doctest::Approx(3).epsilon(0.001));
+  CHECK_EQ(result_array[13], doctest::Approx(7).epsilon(0.001));
+  CHECK_EQ(result_array[14], doctest::Approx(11).epsilon(0.001));
+  CHECK_EQ(result_array[15], doctest::Approx(15).epsilon(0.001));
+  for (uint32_t i = 0; i < 16; i++) {
+    result_array[i] = static_cast<float>(i) + 1.0f;
+  }
+  set_matrix_with_row_major_array(result_array, &m);
+  for (uint32_t i = 0; i < 16; i++) {
+    result_array[i] = static_cast<float>(16 - i);
+  }
+  matrix n;
+  set_matrix_with_row_major_array(result_array, &n);
+  auto r = m * n;
+  to_array_row_major(r, result_array);
+  CHECK_EQ(result_array[0], doctest::Approx(80).epsilon(0.001));
+  CHECK_EQ(result_array[1], doctest::Approx(70).epsilon(0.001));
+  CHECK_EQ(result_array[2], doctest::Approx(60).epsilon(0.001));
+  CHECK_EQ(result_array[3], doctest::Approx(50).epsilon(0.001));
+  CHECK_EQ(result_array[4], doctest::Approx(240).epsilon(0.001));
+  CHECK_EQ(result_array[5], doctest::Approx(214).epsilon(0.001));
+  CHECK_EQ(result_array[6], doctest::Approx(188).epsilon(0.001));
+  CHECK_EQ(result_array[7], doctest::Approx(162).epsilon(0.001));
+  CHECK_EQ(result_array[8], doctest::Approx(400).epsilon(0.001));
+  CHECK_EQ(result_array[9], doctest::Approx(358).epsilon(0.001));
+  CHECK_EQ(result_array[10], doctest::Approx(316).epsilon(0.001));
+  CHECK_EQ(result_array[11], doctest::Approx(274).epsilon(0.001));
+  CHECK_EQ(result_array[12], doctest::Approx(560).epsilon(0.001));
+  CHECK_EQ(result_array[13], doctest::Approx(502).epsilon(0.001));
+  CHECK_EQ(result_array[14], doctest::Approx(444).epsilon(0.001));
+  CHECK_EQ(result_array[15], doctest::Approx(386).epsilon(0.001));
+  for (uint32_t i = 0; i < 16; i++) {
+    result_array[i] = static_cast<float>(i) + 1.0f;
+  }
+  set_matrix_with_row_major_array(result_array, &m);
+  for (uint32_t i = 0; i < 16; i++) {
+    result_array[i] = static_cast<float>(16 - i);
+  }
+  set_matrix_with_row_major_array(result_array, &n);
+  m *= n;
+  CHECK_EQ(r == m, true);
+  to_array_row_major(m, result_array);
+  CHECK_EQ(result_array[0], doctest::Approx(80).epsilon(0.001));
+  CHECK_EQ(result_array[1], doctest::Approx(70).epsilon(0.001));
+  CHECK_EQ(result_array[2], doctest::Approx(60).epsilon(0.001));
+  CHECK_EQ(result_array[3], doctest::Approx(50).epsilon(0.001));
+  CHECK_EQ(result_array[4], doctest::Approx(240).epsilon(0.001));
+  CHECK_EQ(result_array[5], doctest::Approx(214).epsilon(0.001));
+  CHECK_EQ(result_array[6], doctest::Approx(188).epsilon(0.001));
+  CHECK_EQ(result_array[7], doctest::Approx(162).epsilon(0.001));
+  CHECK_EQ(result_array[8], doctest::Approx(400).epsilon(0.001));
+  CHECK_EQ(result_array[9], doctest::Approx(358).epsilon(0.001));
+  CHECK_EQ(result_array[10], doctest::Approx(316).epsilon(0.001));
+  CHECK_EQ(result_array[11], doctest::Approx(274).epsilon(0.001));
+  CHECK_EQ(result_array[12], doctest::Approx(560).epsilon(0.001));
+  CHECK_EQ(result_array[13], doctest::Approx(502).epsilon(0.001));
+  CHECK_EQ(result_array[14], doctest::Approx(444).epsilon(0.001));
+  CHECK_EQ(result_array[15], doctest::Approx(386).epsilon(0.001));
 }
 #ifdef __clang__
 #pragma clang diagnostic pop

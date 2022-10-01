@@ -101,6 +101,7 @@ matrix matrix::scale(const float scale[3]) {
                 0.0f, 0.0f, 0.0f, 1.0f);
 }
 matrix matrix::rotation(const float quat[4]) {
+  // https://www.intel.com/content/dam/develop/external/us/en/documents/293748-142817.pdf
   vec4 xyz(quat[0], quat[1], quat[2], 0.0f);
   vec4 xyz_squared = xyz * xyz;
   vec4 addition_xxyy_yyzz_zzxx = xyz_squared + permute4<1,2,0,-1>(xyz_squared);
@@ -154,13 +155,13 @@ matrix matrix::operator *=(const matrix& m) {
 bool matrix::operator == (const matrix& m) const {
   return horizontal_and(m0 == m.m0) && horizontal_and(m1 == m.m1) && horizontal_and(m2 == m.m2) && horizontal_and(m3 == m.m3);
 }
-void set_matrix_with_row_major_array(const float src[16], matrix* dst) {
+void __vectorcall set_matrix_with_row_major_array(const float src[16], matrix* dst) {
   *dst = matrix(src[0], src[1], src[2], src[3],
                 src[4], src[5], src[6], src[7],
                 src[8], src[9], src[10], src[11],
                 src[12], src[13], src[14], src[15]);
 }
-void set_matrix_with_column_major_array(const float src[16], matrix* dst) {
+void __vectorcall set_matrix_with_column_major_array(const float src[16], matrix* dst) {
   set_matrix_with_row_major_array(src, dst);
   *dst = transpose(*dst);
 }

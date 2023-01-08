@@ -42,7 +42,7 @@ matrix __vectorcall lookat_lh(const vec3& from, const vec3& to, const vec3& up_w
   // https://learn.microsoft.com/en-us/windows/win32/direct3d9/d3dxmatrixlookatlh
   auto view  = normalize_vector(to - from);
   auto right = normalize_vector(cross_product(up_world, view));
-  auto up    = cross_product(right, view);
+  auto up    = cross_product(view, right);
   float array[12];
   to_array(right, &array[0]);
   to_array(up,    &array[4]);
@@ -208,7 +208,7 @@ TEST_CASE("lookat") {
   auto view = normalize_vector(to - from);
   vec3 up_world(0.0f, 1.0f, 0.0f);
   auto right = normalize_vector(cross_product(up_world, view));
-  auto up = cross_product(right, view);
+  auto up = cross_product(view, right);
   auto tx = -dot_product(right, from);
   auto ty = -dot_product(up,    from);
   auto tz = -dot_product(view,  from);
